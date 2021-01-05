@@ -1,45 +1,109 @@
-const products = require('../data/ProductData');
+const Product = require('../models/product');
 const _ = require('underscore');
 
+const productValidation = function(product) {
+    let message = "";
+
+    if (product.price == undefined || product.price <= 0)
+        message += "- Price must be greater than 0\n";
+
+    if (product.weight == undefined || product.weight <= 0)
+        message += "- Weight must be greater than 0\n";
+
+    if (product.name == undefined || product.name == '')
+        message += "- Product name mustn't be empty\n";
+
+    if (product.description == undefined || product.description == '')
+        message += "- Product description mustn't be empty\n";
+
+    if (message == "") {
+        return {
+            error: false
+        };
+    } else {
+        return {
+            error: true,
+            data: {
+                'message': message
+            }
+        };
+    }
+}
+
 exports.getAll = (req, res) => {
-    res.json(products);
+    Product.getAll().then(function(allProducts) {
+        res.json({
+            error: false,
+            data: {allProducts}
+        });
+    });
 };
 
 exports.getById = (req, res) => {
-    res.json(_.find(products, function(product) {
-        return product.id == req.params.id;
-    }));
+    Product.getById(req.params.id).then(function(product) {
+        res.json({
+            error: false,
+            data: {product}
+        });
+    });
 };
 
 exports.store = (req, res) => {
-    let newProduct = {
-        'id': products.length + 1,
-        'name': req.body.name,
-        'description': req.body.description,
-        'price': req.body.price,
-        'amount': req.body.amount
+    
+    // Handle errors
+
+    const validationResult = productValidation(req.body.product);
+    if (validationResult.error) {
+        res.status(400).json(validationResult);
+        return;
     }
 
-    products.push(newProduct);
+    // No errors. Proceed to add a new product.
 
-    res.json({
-        'status': 'Saved!',
-        'product': newProduct
+    const newProduct = {
+        'name': req.body.product.name,
+        'description': req.body.product.description,
+        'price': req.body.product.price,
+        'weight': req.body.product.weight,
+        'categoryId': req.body.product.categoryId
+    };
+
+    Product.create(newProduct).then(function() {
+        res.json({
+            error: false,
+            data: {
+                'product': newProduct
+            }
+        });
     });
 };
 
 exports.updateById = (req, res) => {
-    const currentProduct = _.find(products, function(product) {
-        return product.id == req.params.id;
-    });
 
-    currentProduct.name = req.body.name;
-    currentProduct.description = req.body.description;
-    currentProduct.price = req.body.price;
-    currentProduct.amount = req.body.amount;
+    // Handle errors
 
-    res.json({
-        'updatedProduct': currentProduct
-    });
+    const validationResult = productValidation(req.body.product);
+    if (validationResult['error']) {
+        res.status(500).json(validationResult);
+        return;
+    }
+
+    // No validation errors. Try to update.
+
+    Product.update(req.body.product)
+        .then(function(product){
+            res.json({
+                error: false,
+                data: {product}
+            });
+        })
+        .catch(function(err) {
+            res.status(400).json({
+                error: true,
+                data: {
+                    message: "Product with given id doesn't exist"
+                }
+            });
+        });
 };
 
