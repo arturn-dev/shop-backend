@@ -20,7 +20,7 @@ module.exports.create = (product) => {
         description: product.description,
         price: product.price,
         weight: product.weight,
-        categoryID: product.categoryID
+        categoryId: product.categoryId
     }).save();
 };
 
@@ -32,7 +32,7 @@ module.exports.update = (product) => {
         description: product.description,
         price: product.price,
         weight: product.weight,
-        categoryID: product.categoryID
+        categoryId: product.categoryId
     },
     {
         patch: true

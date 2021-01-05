@@ -13,7 +13,7 @@ const Order = bookshelf.Model.extend({
 
 module.exports.getAll = () => {
     return Order.fetchAll({
-        withRelated: ['products']
+        withRelated: ['products'],
     });
 };
 
@@ -36,7 +36,7 @@ module.exports.getByUsername = (username) => {
 module.exports.getAllByStatus = (statusId) => {
     return new Order({
         orderStatusId: statusId
-    }).fetchAll({
+    }).fetch({
         withRelated: ['products']
     });
 };
@@ -60,12 +60,16 @@ module.exports.addProductToOrder = (orderId, productId, amount) => {
 }
 
 module.exports.updateStatus = (id, statusId) => {
+    let updateObj = {
+        orderStatusId: statusId
+    };
+
+    // If status changes to 'APPROVAL'
+    if (statusId == 2) {
+        updateObj.approvalDate = new Date();
+    }
+    
     return new Order({
         'id': id
-    }).save({
-        orderStatusId: statusId
-    },
-    {
-        patch: true
-    });
+    }).save(updateObj, {patch: true});
 };

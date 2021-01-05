@@ -8,20 +8,17 @@ const newOrderValidation = function(order) {
 
     if (order.username == undefined || order.username == '')
         message += "- Username mustn't be empty\n"
+    else if (order.username.match("^[a-zA-Z0-9_]{3,50}$") == undefined)
+        message += "- Username must be between 3 to 50 characters long and can only contain letters, numbers and '_' character\n";
 
     if (order.email == undefined || order.email == '')
         message += "- Email mustn't be empty\n";
+    else if (order.email.match("^[a-zA-Z0-9_]+@[a-z]+.[a-z]+$") == undefined)
+        message += "- Email must be in form of 'user@example.com'\n";
 
     if (order.telNumber == undefined || order.telNumber == '')
         message += "- Telephone number mustn't be empty\n";
-
-    if (order.username.match("^[a-zA-Z0-9_]{3,50}$") == undefined)
-        message += "- Username can only contain letters, numbers and '_' character\n";
-
-    if (order.email.match("^[a-zA-Z0-9_]+@[a-z]+.[a-z]+$") == undefined)
-        message += "- Email must be in form of 'user@example.com'\n";
-
-    if (order.telNumber.match("^[0-9]{9}$") == undefined)
+    else if (order.telNumber.match("^[0-9]{9}$") == undefined)
         message += "- Telephone number should contain only 9 digits\n";
 
     if (message == "") {
@@ -185,21 +182,22 @@ exports.store = (req, res) => {
         'telNumber': req.body.order.telNumber
     };
 
-    let message = "";
     Product.getAll().then(function(products) {
+        let errMessage = "";
+
         // Check if products exist.
         orderedProductIds.forEach(id => {
             if (_.findWhere(products.models, {'id': id}) == undefined) {
-                message += `- Product with id: ${id} doesn't exist.\n`
+                errMessage += `- Product with id: ${id} doesn't exist.\n`
             }
         });
 
         // Send error if any of the products doesn't exist and return.
-        if (message != "") {
+        if (errMessage != "") {
             res.status(400).json({
                 error: true,
                 data: {
-                    'message': message
+                    'message': errMessage
                 }
             });
             return;
@@ -207,16 +205,7 @@ exports.store = (req, res) => {
 
         Order.create(newOrder).then(function(order) {
             req.body.order.products.forEach(product => {
-                Order.addProductToOrder(order.id, product.id, product.amount)
-                    .catch(function(err) {
-                        res.status(500).json({
-                            error: true,
-                            data: {
-                                message: `Failed to add product with id: ${product.id} to the new order.`
-                            }
-                        });
-                        return;
-                    });
+                Order.addProductToOrder(order.id, product.id, product.amount);
             });
         });
 
